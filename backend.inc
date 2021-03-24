@@ -1,0 +1,2 @@
+OPTION PROC:PRIVATE
+update_board PROTO
