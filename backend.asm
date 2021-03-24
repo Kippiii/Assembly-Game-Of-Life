@@ -16,10 +16,23 @@ Initialization:
 
 	mov edi, offset new_map
 Count_Neighbors:
-	; TODO Implement this proto
+	push ebp
+	push ecx
+	push esi
+	push edi
+	
+	push [ebp + 12]
+	push [ebp + 8]
+	push [ebp + 4]
+	push ecx
 
-	; Assume the number of neighbors is in edx
-	mov edx, 4
+	call get_neighbor_count
+	pop edx
+
+	pop edi
+	pop esi
+	pop ecx
+	pop ebp
 Check_Alive:
 	cmp byte ptr [esi], 0
 	je Dead_Start
@@ -64,7 +77,7 @@ Update:
 Ending:
 	mov esp, ebp
 	pop eax
-	sub esp, 12
+	add esp, 12
 	mov edi, offset new_map
 	push edi
 	push eax
@@ -73,16 +86,66 @@ update_board endp
 
 
 .data
-direction byte 0, 1, 0, -1, 1, 0, -1, 0, 1, 1, 1, -1, -1, 1, -1, -1
+direction dword 0, 1, 0, -1, 1, 0, -1, 0, 1, 1, 1, -1, -1, 1, -1, -1
 .code
+; INPUT: pointer to array, height, width, pos
 get_neighbor_count proc
-	
+Initialization:
+	mov ebp, esp
+	push ebp
+
+	mov ebx, 0
+	mov ecx, 8
+	mov esi, offset direction
+Bounds_Check:
+	mov eax, [ebp + 4]
+	mov edx, 0
+	div dword ptr [ebp + 12]
+	; EAX has y-pos, EDX has x-pos
+	add edx, [esi]
+	add eax, [esi + 4]
+
+	cmp edx, 0
+	jl Cleanup
+	cmp edx, [ebp + 8]
+	jge Cleanup
+	cmp eax, 0
+	jl Cleanup
+	cmp eax, [ebp + 12]
+	jge Cleanup
+	jmp Alive_Check
+Alive_Check:
+	push edx
+	mul dword ptr [ebp + 12]
+	pop edx
+	add eax, edx
+
+	mov edi, [ebp + 16]
+	add edi, eax
+	cmp byte ptr [edi], 0
+	je Is_Dead
+	jmp Is_Alive
+Is_Alive:
+	add ebx, 1
+	jmp Cleanup
+Is_Dead:
+	jmp Cleanup
+Cleanup:
+	add esi, 8
+	loop Bounds_Check
+Ending:
+	mov esp, ebp
+	pop eax
+	add esp, 16
+	push ebx
+	push eax
+	ret
 get_neighbor_count endp
 
 
 ; Driver code (TODO remove this)
 .data
-map byte 1, 1, 1, 1
+map byte 0, 1, 1, 1
 .code
 main proc
 	mov esi, offset map
@@ -92,5 +155,6 @@ main proc
 	push eax
 	push ebx
 	call update_board
+	pop edi
 main endp
 end main
