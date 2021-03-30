@@ -76,11 +76,19 @@ Update:
 	jbe Ending
 	jmp Count_Neighbors
 Ending:
+	mov ecx, eax
+	mov esi, offset new_map
+	mov edi, [ebp + 12]
+Looping:
+	mov bl, byte ptr [esi]
+	mov byte ptr [edi], bl
+	inc esi
+	inc edi
+	loop Looping
+
 	mov esp, ebp
 	pop eax
 	add esp, 12
-	mov edi, offset new_map
-	push edi
 	push eax
 	ret
 update_board endp

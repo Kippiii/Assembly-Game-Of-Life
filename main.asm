@@ -13,6 +13,6 @@ main proc
 	push eax
 	push ebx
 	call update_board
-	pop edi
+	mov edi, offset map
 main endp
 end main
