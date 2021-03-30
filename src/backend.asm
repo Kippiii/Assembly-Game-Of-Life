@@ -1,4 +1,5 @@
 include Irvine32.inc
+include backend.inc
 
 .data?
 new_map byte 10000 DUP(?)
@@ -75,11 +76,19 @@ Update:
 	jbe Ending
 	jmp Count_Neighbors
 Ending:
+	mov ecx, eax
+	mov esi, offset new_map
+	mov edi, [ebp + 12]
+Looping:
+	mov bl, byte ptr [esi]
+	mov byte ptr [edi], bl
+	inc esi
+	inc edi
+	loop Looping
+
 	mov esp, ebp
 	pop eax
 	add esp, 12
-	mov edi, offset new_map
-	push edi
 	push eax
 	ret
 update_board endp
@@ -142,19 +151,4 @@ Ending:
 	ret
 get_neighbor_count endp
 
-
-; Driver code (TODO remove this)
-.data
-map byte 0, 1, 1, 1
-.code
-main proc
-	mov esi, offset map
-	mov eax, 2
-	mov ebx, 2
-	push esi
-	push eax
-	push ebx
-	call update_board
-	pop edi
-main endp
-end main
+end
