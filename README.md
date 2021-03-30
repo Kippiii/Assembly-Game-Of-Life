@@ -1,4 +1,4 @@
-                                                                    John Conway's Game of Life
+John Conway's Game of Life
 
 Controls for game:
         W,A,S,D Moves the cursor to a specific cell
