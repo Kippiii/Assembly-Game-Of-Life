@@ -9,26 +9,26 @@ include backend.inc
 MAXIMUM_HEIGHT BYTE ?
 MAXIMUM_WIDTH  BYTE ?
 
-world_map BYTE 0, 1, 0, 1, 0, 1, 0, 1, 0
-old_key_stroke BYTE ?
-current_key_stroke BYTE ?
+world_map BYTE 50 DUP(0)
+old_key_stroke BYTE ?, 0
+current_key_stroke BYTE ?, 0
 
 WELCOME_PROMPT BYTE "<->                                          John Conway's Game of Life                                           <->", 0AH, 0DH, 0
 MAIN_MENU    BYTE "<->......Controls.......<->", 0AH, 0DH, 0
-PROMPT_1     BYTE "W Shift carriage up.....<->", 0AH, 0DH, 0
-PROMPT_2     BYTE "A Shift carriage left...<->", 0AH, 0DH, 0
-PROMPT_3     BYTE "S Shift carriage down...<->", 0AH, 0DH, 0
-PROMPT_4     BYTE "D Shift carriage right..<->", 0AH, 0DH, 0
-PROMPT_5     BYTE "ESC Exit Game...........<->", 0AH, 0DH, 0
+PROMPT_1     BYTE "w Shift carriage up.....<->", 0AH, 0DH, 0
+PROMPT_2     BYTE "a Shift carriage left...<->", 0AH, 0DH, 0
+PROMPT_3     BYTE "s Shift carriage down...<->", 0AH, 0DH, 0
+PROMPT_4     BYTE "d Shift carriage right..<->", 0AH, 0DH, 0
+PROMPT_5     BYTE "q Quit Game.............<->", 0AH, 0DH, 0
 PROMPT_6     BYTE "p Toggle pause/continue.<->", 0AH, 0DH, 0
 PROMPT_7     BYTE "f Step one frame........<->", 0AH, 0DH, 0
-PROMPT_8     BYTE "SPACE BAR Flip Cell.....<->", 0AH, 0DH, 0
+PROMPT_8     BYTE "x Flip Cell.............<->", 0AH, 0DH, 0
 BOTTOM_FRAME BYTE "<->.....................<->", 0AH, 0DH, 0
 
 P_CHAR BYTE "p", 0
 F_CHAR BYTE "f", 0
-ESC_CHAR BYTE "ESC", 0
-SPACE_CHAR BYTE " ", 0
+Q_CHAR BYTE "q", 0
+X_CHAR BYTE "x", 0
 W_CHAR BYTE "w", 0
 A_CHAR BYTE "a", 0
 S_CHAR BYTE "s", 0
@@ -118,48 +118,109 @@ game_of_life_main PROC
     ; display MAIN_MENU
     call display_MAIN_MENU
 
-        ;main_loop: ; while user doesnt press ESC, ESC will end the game during any state
-        main_loop:
-            ; current_key_stroke = call ReadKey
-            input1_loop:
-                mov EAX, 1000
-                call Delay
-                call ReadKey
-                ;call update_board
-                ;call display_board ; Render board while waiting for input
-                jz   input1_loop
-                mov current_key_stroke, AL
-                ; if current_key_stroke == 'p'
-                mov EDX, OFFSET P_CHAR
-                call WriteString
-                mov EDX, OFFSET current_key_stroke
-                call WriteString
-                INVOKE Str_Compare, ADDR P_CHAR, ADDR current_key_stroke
-                jz input1_loop
-                call DumpRegs
-                    ; move_cursor_loop:
-                        ; current_key_stroke = call ReadKey
-                        ; if current_key_stroke == 'ESC'
-                            ; exit game
-                        ; else if current_key_stroke == 'p'
-                            ; break out of loop
-                        ; else if current_key_stroke == 'spacebar'
-                            ; call set_cell
-                        ; else if current_key_stroke == 'f'
-                            ; call update_board
-                        ; else
-                            ; call move_cursor
-                    ; loop move_cursor_loop
-                ; else if current_key_stroke == 'f'
-                    ; call update_board
-                    ; call display_board
-                ; else if current_key_stroke == 'ESC'
-                    ; exit game
+        ;MAIN_LABEL: ; while user doesnt press ESC, ESC will end the game during any state
+    MAIN_LABEL:
+        INPUT1_LABEL:
             ; call update_board
             ; call display_board
-        ;loop main_loop
 
-    exit
+            mov EAX, 10
+            call Delay
+            call ReadKey ; Get keyboard input
+            jz INPUT1_LABEL ; If no input was given, repeat INPUT1_LABEL
+            mov EDX, OFFSET PROMPT_1
+            call WriteString
+            mov current_key_stroke, AL ; current_key_stroke = ReadKey()
+            ; check if p
+            mov AL, P_CHAR
+                cmp AL, current_key_stroke
+                jz PAUSE_LABEL ; if current_key_stroke == 'p'
+            mov AL, X_CHAR
+                cmp AL, current_key_stroke
+                jz PAUSE_LABEL ; if current_key_stroke == 'x'
+            ; check if f
+            mov AL, F_CHAR
+                cmp AL, current_key_stroke
+                jz FRAME_LABEL ; if current_key_stroke == 'f'
+            ; check if q
+            mov AL, Q_CHAR
+                cmp AL, current_key_stroke
+                jz EXIT_LABEL ; if current_key_stroke == 'q'
+            ; check if w, a, s, OR d
+            mov AL, W_CHAR
+                cmp AL, current_key_stroke
+                jz CALL_MOVE_CELL_LABEL ; if current_key_stroke == 'w'
+            mov AL, A_CHAR
+                cmp AL, current_key_stroke
+                jz CALL_MOVE_CELL_LABEL ; if current_key_stroke == 'a'
+            mov AL, S_CHAR
+                cmp AL, current_key_stroke
+                jz CALL_MOVE_CELL_LABEL ; if current_key_stroke == 's'
+            mov AL, D_CHAR
+                cmp AL, current_key_stroke
+                jz CALL_MOVE_CELL_LABEL ; if current_key_stroke == 'd'
+
+            jnz INPUT1_LABEL ; if no match to p, f, q, w, a, s, d, jump to INPUT1_LABEL
+
+        PAUSE_LABEL:
+            mov EAX, 10
+            call Delay
+            call ReadKey ; Get keyboard input
+            jz PAUSE_LABEL ; If no input was given, repeat PAUSE_LABEL
+            mov EDX, OFFSET PROMPT_6
+            call WriteString
+            mov current_key_stroke, AL ; current_key_stroke = ReadKey()
+            mov AL, Q_CHAR
+                cmp AL, current_key_stroke ; if current_key_stroke == 'q'
+                jz EXIT_LABEL
+            mov AL, P_CHAR
+                cmp AL, current_key_stroke ; if current_key_stroke == 'p'
+                jz INPUT1_LABEL
+            mov AL, F_CHAR
+                cmp AL, current_key_stroke ; if current_key_stroke == 'f'
+                jz FRAME_LABEL
+            mov AL, X_CHAR
+                cmp AL, current_key_stroke ; if current_key_stroke == 'x'
+                jz CALL_SET_CELL_LABEL
+            ; check if w, a, s, OR d
+            mov AL, W_CHAR
+                cmp AL, current_key_stroke
+                jz CALL_MOVE_CELL_LABEL ; if current_key_stroke == 'w'
+            mov AL, A_CHAR
+                cmp AL, current_key_stroke
+                jz CALL_MOVE_CELL_LABEL ; if current_key_stroke == 'a'
+            mov AL, S_CHAR
+                cmp AL, current_key_stroke
+                jz CALL_MOVE_CELL_LABEL ; if current_key_stroke == 's'
+            mov AL, D_CHAR
+                cmp AL, current_key_stroke
+                jz CALL_MOVE_CELL_LABEL ; if current_key_stroke == 'd'
+            jnz PAUSE_LABEL
+
+        CALL_MOVE_CELL_LABEL:
+            ; move the cursor up down left right?
+            mov EDX, OFFSET PROMPT_1
+            call WriteString
+            jmp INPUT1_LABEL
+
+        CALL_SET_CELL_LABEL:
+            ; call set_cell
+            mov EDX, OFFSET PROMPT_8
+            call WriteString
+            jmp PAUSE_LABEL
+
+        FRAME_LABEL:
+            ; call update_board
+            ; call display_board
+            mov EDX, OFFSET PROMPT_7
+            call WriteString
+            jmp PAUSE_LABEL
+
+        EXIT_LABEL:
+            mov EDX, OFFSET PROMPT_5
+            call WriteString
+            call DumpRegs
+            exit
 
 game_of_life_main ENDP
 END game_of_life_main
