@@ -13,9 +13,9 @@ carriage_X_pos BYTE 0
 carriage_Y_pos BYTE 0
 
 world_map WORD 0, 0, 0, 0, 0,
-               0, 0, 0, 0, 0,
+               0, 0, 1, 0, 0,
                0, 1, 1, 1, 0,
-               0, 0, 0, 0, 0,
+               0, 0, 1, 0, 0,
                0, 0, 0, 0, 0
 
 board_size BYTE 5
@@ -176,7 +176,7 @@ game_of_life_main PROC
     call Gotoxy
         ;MAIN_LABEL: ; while user doesnt press ESC, ESC will end the game during any state
     MAIN_LABEL:
-    mov EAX, red + (blue * 16)
+    mov EAX, white + (black * 16)
     call SetTextColor
     call Clrscr
         INPUT_LABEL:
@@ -191,7 +191,7 @@ game_of_life_main PROC
             push EAX
             call display_board
 
-            mov EAX, 1000
+            mov EAX, 10000
             call Delay
             call ReadKey ; Get keyboard input
             jz INPUT_LABEL ; If no input was given, repeat INPUT_LABEL
@@ -228,7 +228,7 @@ game_of_life_main PROC
             jnz INPUT_LABEL ; if no match to p, f, q, w, a, s, d, jump to INPUT_LABEL
 
         PAUSE_LABEL:
-            mov EAX, 5
+            mov EAX, 10
             call Delay
             call ReadKey ; Get keyboard input
             jz PAUSE_LABEL ; If no input was given, repeat PAUSE_LABEL
@@ -293,6 +293,8 @@ game_of_life_main PROC
             call WriteString
             call WaitMsg
             call set_cell
+            mov EAX, OFFSET world_map
+            push EAX
             call display_board
             mov DL, carriage_X_pos
             mov DH, carriage_Y_pos
@@ -300,10 +302,15 @@ game_of_life_main PROC
             jmp PAUSE_LABEL
 
         FRAME_LABEL:
+            mov ECX, OFFSET world_map
+            mov ESI, 5
+            mov EDI, 5
             push ECX
             push ESI
             push EDI
             call update_board
+            mov EAX, OFFSET world_map
+            push EAX
             call display_board
             mov DL, carriage_X_pos
             mov DH, carriage_Y_pos
