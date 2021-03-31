@@ -12,11 +12,11 @@ MAXIMUM_WIDTH  BYTE ?
 carriage_X_pos BYTE 0
 carriage_Y_pos BYTE 0
 
-world_map WORD 0, 1, 0, 0, 1,
-               1, 0, 1, 1, 0,
-               0, 1, 0, 0, 1,
-               0, 1, 0, 1, 0,
-               0, 0, 1, 0, 0
+world_map WORD 0, 0, 0, 0, 0,
+               0, 0, 0, 0, 0,
+               0, 1, 1, 1, 0,
+               0, 0, 0, 0, 0,
+               0, 0, 0, 0, 0
 
 board_size BYTE 5
 current_key_stroke BYTE ?, 0
@@ -180,12 +180,18 @@ game_of_life_main PROC
     call SetTextColor
     call Clrscr
         INPUT_LABEL:
-            ; call update_board
+            mov ECX, OFFSET world_map
+            mov ESI, 5
+            mov EDI, 5
+            push ECX
+            push ESI
+            push EDI
+            call update_board
             mov EAX, OFFSET world_map
             push EAX
             call display_board
 
-            mov EAX, 5
+            mov EAX, 1000
             call Delay
             call ReadKey ; Get keyboard input
             jz INPUT_LABEL ; If no input was given, repeat INPUT_LABEL
@@ -294,7 +300,10 @@ game_of_life_main PROC
             jmp PAUSE_LABEL
 
         FRAME_LABEL:
-            ; call update_board
+            push ECX
+            push ESI
+            push EDI
+            call update_board
             call display_board
             mov DL, carriage_X_pos
             mov DH, carriage_Y_pos
