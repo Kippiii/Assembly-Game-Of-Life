@@ -9,15 +9,16 @@ include backend.inc
 MAXIMUM_HEIGHT BYTE ?
 MAXIMUM_WIDTH  BYTE ?
 
-carriage_X_pos BYTE 0d
-carriage_Y_pos BYTE 10
+carriage_X_pos BYTE 0
+carriage_Y_pos BYTE 0
 
 world_map WORD 0, 1, 0, 0, 1,
                1, 0, 1, 1, 0,
                0, 1, 0, 0, 1,
                0, 1, 0, 1, 0,
-               0, 0, 0, 0, 0
+               0, 0, 1, 0, 0
 
+board_size BYTE 5
 current_key_stroke BYTE ?, 0
 
 array_position WORD 0
@@ -37,12 +38,14 @@ BOTTOM_FRAME   BYTE "<->.....................<->", 0AH, 0DH, 0
 P_CHAR BYTE "p", 0
 F_CHAR BYTE "f", 0
 Q_CHAR BYTE "q", 0
-X_CHAR BYTE "x", 0
+X_CHAR BYTE "X", 0
 W_CHAR BYTE "w", 0
 A_CHAR BYTE "a", 0
 S_CHAR BYTE "s", 0
 D_CHAR BYTE "d", 0
 SPACE_CHAR BYTE " ", 0
+
+LEAVING_SET_CELL BYTE "LEAVING set_cell", 0
 
 .code
 display_WELCOME PROC
@@ -98,7 +101,14 @@ display_MAIN_MENU ENDP
 .code
 set_cell PROC
 ; INPUT: EAX - Pointer to array
-    mov [world_map + ECX], 1
+    ; my_array[x][y] = my_array[x][y] + 1
+    mov AL, carriage_Y_pos
+    add AL, carriage_X_pos
+    and world_map[EAX], 1
+
+    mov EDX, OFFSET LEAVING_SET_CELL
+    call WriteString
+    call WaitMsg
 
     ret
 ; OUTPUT: EAX - Pointer to array
@@ -106,7 +116,6 @@ set_cell ENDP
 
 .code
 display_board PROC
-    call Clrscr
 
     and EDX, 0 ; Set the values for Gotoxy at the origin, DL, DH
     call Gotoxy
@@ -115,20 +124,22 @@ display_board PROC
     mov ECX, LENGTHOF world_map ; Maximum loops
     cld
     L1:
-        mov EAX, 100
-        call Delay
+        cmp ESI, 0
+        jz FIRST_RUN
+        mov EAX, ESI
+        mov BL, board_size
+        div BL
+        cmp AH, 0
+        jz PRINT_NEW_LINE_LABEL
+        FIRST_RUN:
         mov AX, [world_map + ESI]
         cmp AX, 1
         jz PRINT_X_CHAR_LABEL
         jnz PRINT_SPACE_CHAR_LABEL
         CONTINUE_L1:
-        mov EAX, ESI
-        mov BL, LENGTHOF world_map
-        div BL
-        cmp AH, 0
-        jz PRINT_NEW_LINE_LABEL
-        CONTINUE_L2:
         add ESI, 2
+        cmp ECX, 1
+        jz RET_LABEL
     loop L1
 
     PRINT_X_CHAR_LABEL:
@@ -143,9 +154,10 @@ display_board PROC
 
     PRINT_NEW_LINE_LABEL:
         call Crlf
-        jmp CONTINUE_L2
+        jmp FIRST_RUN
 
-    ret
+    RET_LABEL:
+        ret
 ; OUTPUT: NONE
 display_board ENDP
 
@@ -166,13 +178,14 @@ game_of_life_main PROC
     MAIN_LABEL:
     mov EAX, red + (blue * 16)
     call SetTextColor
+    call Clrscr
         INPUT_LABEL:
             ; call update_board
             mov EAX, OFFSET world_map
             push EAX
             call display_board
 
-            mov EAX, 100
+            mov EAX, 5
             call Delay
             call ReadKey ; Get keyboard input
             jz INPUT_LABEL ; If no input was given, repeat INPUT_LABEL
@@ -209,15 +222,10 @@ game_of_life_main PROC
             jnz INPUT_LABEL ; if no match to p, f, q, w, a, s, d, jump to INPUT_LABEL
 
         PAUSE_LABEL:
-            mov EAX, 10
+            mov EAX, 5
             call Delay
             call ReadKey ; Get keyboard input
             jz PAUSE_LABEL ; If no input was given, repeat PAUSE_LABEL
-            mov DL, carriage_X_pos
-            mov DH, carriage_Y_pos
-            call Gotoxy
-            mov EDX, OFFSET PROMPT_6
-            call WriteString
             mov current_key_stroke, AL ; current_key_stroke = ReadKey()
             mov AL, Q_CHAR
                 cmp AL, current_key_stroke ; if current_key_stroke == 'q'
@@ -275,13 +283,14 @@ game_of_life_main PROC
             jmp PAUSE_LABEL
 
         CALL_SET_CELL_LABEL:
-            ; call set_cell
+            mov EDX, OFFSET PROMPT_1
+            call WriteString
+            call WaitMsg
+            call set_cell
             call display_board
             mov DL, carriage_X_pos
             mov DH, carriage_Y_pos
             call Gotoxy
-            mov EDX, OFFSET PROMPT_8
-            call WriteString
             jmp PAUSE_LABEL
 
         FRAME_LABEL:
@@ -290,13 +299,9 @@ game_of_life_main PROC
             mov DL, carriage_X_pos
             mov DH, carriage_Y_pos
             call Gotoxy
-            mov EDX, OFFSET PROMPT_7
-            call WriteString
             jmp PAUSE_LABEL
 
         EXIT_LABEL:
-            mov EDX, OFFSET PROMPT_5
-            call WriteString
             call DumpRegs
             exit
 
