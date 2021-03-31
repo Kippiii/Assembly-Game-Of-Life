@@ -12,10 +12,10 @@ MAXIMUM_WIDTH  BYTE ?
 carriage_X_pos BYTE 0
 carriage_Y_pos BYTE 0
 
-world_map WORD 0, 0, 0, 0, 0,
-               0, 0, 1, 0, 0,
+world_map BYTE 0, 0, 0, 0, 0,
+               0, 0, 0, 0, 0,
                0, 1, 1, 1, 0,
-               0, 0, 1, 0, 0,
+               0, 0, 0, 0, 0,
                0, 0, 0, 0, 0
 
 board_size BYTE 5
@@ -132,12 +132,12 @@ display_board PROC
         cmp AH, 0
         jz PRINT_NEW_LINE_LABEL
         FIRST_RUN:
-        mov AX, [world_map + ESI]
-        cmp AX, 1
+        mov AL, [world_map + ESI]
+        cmp AL, 1
         jz PRINT_X_CHAR_LABEL
         jnz PRINT_SPACE_CHAR_LABEL
         CONTINUE_L1:
-        add ESI, 2
+        add ESI, 1
         cmp ECX, 1
         jz RET_LABEL
     loop L1
@@ -191,7 +191,7 @@ game_of_life_main PROC
             push EAX
             call display_board
 
-            mov EAX, 10000
+            mov EAX, 100
             call Delay
             call ReadKey ; Get keyboard input
             jz INPUT_LABEL ; If no input was given, repeat INPUT_LABEL
