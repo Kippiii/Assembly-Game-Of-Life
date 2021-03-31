@@ -9,26 +9,30 @@ include backend.inc
 MAXIMUM_HEIGHT BYTE ?
 MAXIMUM_WIDTH  BYTE ?
 
-carriage_X_pos BYTE 0
+carriage_X_pos BYTE 0d
 carriage_Y_pos BYTE 10
 
-world_map BYTE 100 DUP(1)
+world_map WORD 0, 1, 0, 0, 1,
+               1, 0, 1, 1, 0,
+               0, 1, 0, 0, 1,
+               0, 1, 0, 1, 0,
+               0, 0, 0, 0, 0
+
 current_key_stroke BYTE ?, 0
 
 array_position WORD 0
-flag BYTE 0
 
 WELCOME_PROMPT BYTE "<->                                          John Conway's Game of Life                                           <->", 0AH, 0DH, 0
-MAIN_MENU    BYTE   "<->.......Controls......<->", 0AH, 0DH, 0
-PROMPT_1     BYTE   "w Shift carriage up.....<->", 0AH, 0DH, 0
-PROMPT_2     BYTE   "a Shift carriage left...<->", 0AH, 0DH, 0
-PROMPT_3     BYTE   "s Shift carriage down...<->", 0AH, 0DH, 0
-PROMPT_4     BYTE   "d Shift carriage right..<->", 0AH, 0DH, 0
-PROMPT_5     BYTE   "q Quit Game.............<->", 0AH, 0DH, 0
-PROMPT_6     BYTE   "p Toggle pause/continue.<->", 0AH, 0DH, 0
-PROMPT_7     BYTE   "f Step one frame........<->", 0AH, 0DH, 0
-PROMPT_8     BYTE   "x Flip Cell.............<->", 0AH, 0DH, 0
-BOTTOM_FRAME BYTE   "<->.....................<->", 0AH, 0DH, 0
+MAIN_MENU      BYTE "<->.......Controls......<->", 0AH, 0DH, 0
+PROMPT_1       BYTE "w Shift carriage up.....<->", 0AH, 0DH, 0
+PROMPT_2       BYTE "a Shift carriage left...<->", 0AH, 0DH, 0
+PROMPT_3       BYTE "s Shift carriage down...<->", 0AH, 0DH, 0
+PROMPT_4       BYTE "d Shift carriage right..<->", 0AH, 0DH, 0
+PROMPT_5       BYTE "q Quit Game.............<->", 0AH, 0DH, 0
+PROMPT_6       BYTE "p Toggle pause/continue.<->", 0AH, 0DH, 0
+PROMPT_7       BYTE "f Step one frame........<->", 0AH, 0DH, 0
+PROMPT_8       BYTE "x Flip Cell.............<->", 0AH, 0DH, 0
+BOTTOM_FRAME   BYTE "<->.....................<->", 0AH, 0DH, 0
 
 P_CHAR BYTE "p", 0
 F_CHAR BYTE "f", 0
@@ -38,8 +42,7 @@ W_CHAR BYTE "w", 0
 A_CHAR BYTE "a", 0
 S_CHAR BYTE "s", 0
 D_CHAR BYTE "d", 0
-
-NEW_LINE BYTE 0AH, 0DH, 0
+SPACE_CHAR BYTE " ", 0
 
 .code
 display_WELCOME PROC
@@ -103,31 +106,44 @@ set_cell ENDP
 
 .code
 display_board PROC
-; INPUT: EAX - Pointer to array
     call Clrscr
 
-    and EDX, 0
+    and EDX, 0 ; Set the values for Gotoxy at the origin, DL, DH
     call Gotoxy
 
-    mov ESI, OFFSET world_map
-    mov ECX, 100h
+    mov ESI, 0 ; Start counter
+    mov ECX, LENGTHOF world_map ; Maximum loops
     cld
-    L1: lodsd
+    L1:
+        mov EAX, 100
+        call Delay
+        mov AX, [world_map + ESI]
+        cmp AX, 1
+        jz PRINT_X_CHAR_LABEL
+        jnz PRINT_SPACE_CHAR_LABEL
+        CONTINUE_L1:
+        mov EAX, ESI
+        mov BL, LENGTHOF world_map
+        div BL
+        cmp AH, 0
+        jz PRINT_NEW_LINE_LABEL
+        CONTINUE_L2:
+        add ESI, 2
+    loop L1
+
+    PRINT_X_CHAR_LABEL:
         mov EDX, OFFSET X_CHAR
         call WriteString
-        add array_position, 1
-        mov AX, array_position
-        mov BL, OFFSET 100
-        div BL
-        jc PRINT_NEW_LINE_LABEL
-        loop L1
+        jmp CONTINUE_L1
+
+    PRINT_SPACE_CHAR_LABEL:
+        mov EDX, OFFSET SPACE_CHAR
+        call WriteString
+        jmp CONTINUE_L1
 
     PRINT_NEW_LINE_LABEL:
-        mov EDX, OFFSET NEW_LINE
-        call WriteString
-        jmp L1
-
-    call Crlf
+        call Crlf
+        jmp CONTINUE_L2
 
     ret
 ; OUTPUT: NONE
@@ -150,18 +166,16 @@ game_of_life_main PROC
     MAIN_LABEL:
     mov EAX, red + (blue * 16)
     call SetTextColor
-        INPUT1_LABEL:
+        INPUT_LABEL:
             ; call update_board
             mov EAX, OFFSET world_map
             push EAX
-            call display_board ; INPUTS: EAX
+            call display_board
 
             mov EAX, 100
             call Delay
             call ReadKey ; Get keyboard input
-            jz INPUT1_LABEL ; If no input was given, repeat INPUT1_LABEL
-            mov EDX, OFFSET PROMPT_1
-            call WriteString
+            jz INPUT_LABEL ; If no input was given, repeat INPUT_LABEL
             mov current_key_stroke, AL ; current_key_stroke = ReadKey()
             ; check if p
             mov AL, P_CHAR
@@ -169,7 +183,7 @@ game_of_life_main PROC
                 jz PAUSE_LABEL ; if current_key_stroke == 'p'
             mov AL, X_CHAR
                 cmp AL, current_key_stroke
-                jz PAUSE_LABEL ; if current_key_stroke == 'x'
+                jz CALL_SET_CELL_LABEL ; if current_key_stroke == 'x'
             ; check if f
             mov AL, F_CHAR
                 cmp AL, current_key_stroke
@@ -192,13 +206,16 @@ game_of_life_main PROC
                 cmp AL, current_key_stroke
                 jz MOVE_CELL_RIGHT_LABEL ; if current_key_stroke == 'd'
 
-            jnz INPUT1_LABEL ; if no match to p, f, q, w, a, s, d, jump to INPUT1_LABEL
+            jnz INPUT_LABEL ; if no match to p, f, q, w, a, s, d, jump to INPUT_LABEL
 
         PAUSE_LABEL:
             mov EAX, 10
             call Delay
             call ReadKey ; Get keyboard input
             jz PAUSE_LABEL ; If no input was given, repeat PAUSE_LABEL
+            mov DL, carriage_X_pos
+            mov DH, carriage_Y_pos
+            call Gotoxy
             mov EDX, OFFSET PROMPT_6
             call WriteString
             mov current_key_stroke, AL ; current_key_stroke = ReadKey()
@@ -207,7 +224,7 @@ game_of_life_main PROC
                 jz EXIT_LABEL
             mov AL, P_CHAR
                 cmp AL, current_key_stroke ; if current_key_stroke == 'p'
-                jz INPUT1_LABEL
+                jz INPUT_LABEL
             mov AL, F_CHAR
                 cmp AL, current_key_stroke ; if current_key_stroke == 'f'
                 jz FRAME_LABEL
@@ -234,32 +251,35 @@ game_of_life_main PROC
             mov DL, carriage_X_pos
             mov DH, carriage_Y_pos
             call Gotoxy
-            jmp INPUT1_LABEL
+            jmp PAUSE_LABEL
 
         MOVE_CELL_LEFT_LABEL:
             sub carriage_X_pos, 1
             mov DL, carriage_X_pos
             mov DH, carriage_Y_pos
             call Gotoxy
-            jmp INPUT1_LABEL
+            jmp PAUSE_LABEL
 
         MOVE_CELL_DOWN_LABEL:
             add carriage_Y_pos, 1
             mov DL, carriage_X_pos
             mov DH, carriage_Y_pos
             call Gotoxy
-            jmp INPUT1_LABEL
+            jmp PAUSE_LABEL
 
         MOVE_CELL_RIGHT_LABEL:
             add carriage_X_pos, 1
             mov DL, carriage_X_pos
             mov DH, carriage_Y_pos
             call Gotoxy
-            jmp INPUT1_LABEL
+            jmp PAUSE_LABEL
 
         CALL_SET_CELL_LABEL:
-            call set_cell
+            ; call set_cell
             call display_board
+            mov DL, carriage_X_pos
+            mov DH, carriage_Y_pos
+            call Gotoxy
             mov EDX, OFFSET PROMPT_8
             call WriteString
             jmp PAUSE_LABEL
@@ -267,6 +287,9 @@ game_of_life_main PROC
         FRAME_LABEL:
             ; call update_board
             call display_board
+            mov DL, carriage_X_pos
+            mov DH, carriage_Y_pos
+            call Gotoxy
             mov EDX, OFFSET PROMPT_7
             call WriteString
             jmp PAUSE_LABEL
