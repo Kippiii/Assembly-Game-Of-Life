@@ -12,11 +12,13 @@ MAXIMUM_WIDTH  BYTE ?
 carriage_X_pos BYTE 0
 carriage_Y_pos BYTE 0
 
-world_map BYTE 0, 0, 0, 0, 0,
-               0, 0, 0, 0, 0,
-               0, 1, 1, 1, 0,
-               0, 0, 0, 0, 0,
-               0, 0, 0, 0, 0
+world_map BYTE 0, 1, 1, 1, 0,
+               1, 0, 1, 0, 1,
+               1, 0, 0, 0, 1,
+               1, 0, 1, 0, 1,
+               0, 1, 1, 1, 1
+
+;world_map BYTE 100 DUP(1)
 
 board_size BYTE 5
 current_key_stroke BYTE ?, 0
@@ -101,9 +103,9 @@ display_MAIN_MENU ENDP
 .code
 set_cell PROC
 ; INPUT: EAX - Pointer to array
-    ; my_array[x][y] = my_array[x][y] + 1
+    pop EAX
     mov AL, carriage_Y_pos
-    add AL, carriage_X_pos
+    mov AL, carriage_X_pos
     and world_map[EAX], 1
 
     mov EDX, OFFSET LEAVING_SET_CELL
@@ -115,8 +117,27 @@ set_cell PROC
 set_cell ENDP
 
 .code
-display_board PROC
+initialize_world_map PROC
+; INPUT: NONE
+    call Randomize
+    mov ESI, 0
+    mov ECX, 100 
 
+    L1:
+    mov AL, world_map[ESI]
+    mov EAX, 1d ; generate random integers
+    call RandomRange ; 0 or 1 in EAX
+    mov BYTE PTR world_map[ESI], BYTE PTR AL ; store in the array
+    add ESI, 1 ; next array position
+    loop L1
+
+    ret
+; OUTPUT: NONE
+initialize_world_map ENDP
+
+.code
+display_board PROC
+; INPUT: EAX, address to array
     and EDX, 0 ; Set the values for Gotoxy at the origin, DL, DH
     call Gotoxy
 
@@ -163,6 +184,7 @@ display_board ENDP
 
 ; MAIN PROGRAM
 game_of_life_main PROC
+    call initialize_world_map ; initialize the world_map with random 1s and 0s
     ; get board measurements
     call GetMaxXY
     mov MAXIMUM_WIDTH, DL
@@ -174,7 +196,7 @@ game_of_life_main PROC
     mov DL, carriage_X_pos
     mov DH, carriage_Y_pos
     call Gotoxy
-        ;MAIN_LABEL: ; while user doesnt press ESC, ESC will end the game during any state
+    ; while user doesnt press "q"
     MAIN_LABEL:
     mov EAX, white + (black * 16)
     call SetTextColor
@@ -186,12 +208,12 @@ game_of_life_main PROC
             push ECX
             push ESI
             push EDI
-            call update_board
+            ;call update_board
             mov EAX, OFFSET world_map
             push EAX
             call display_board
 
-            mov EAX, 100
+            mov EAX, 750
             call Delay
             call ReadKey ; Get keyboard input
             jz INPUT_LABEL ; If no input was given, repeat INPUT_LABEL
@@ -289,16 +311,12 @@ game_of_life_main PROC
             jmp PAUSE_LABEL
 
         CALL_SET_CELL_LABEL:
-            mov EDX, OFFSET PROMPT_1
-            call WriteString
-            call WaitMsg
+            mov EAX, OFFSET world_map
+            push EAX
             call set_cell
             mov EAX, OFFSET world_map
             push EAX
             call display_board
-            mov DL, carriage_X_pos
-            mov DH, carriage_Y_pos
-            call Gotoxy
             jmp PAUSE_LABEL
 
         FRAME_LABEL:
@@ -308,7 +326,7 @@ game_of_life_main PROC
             push ECX
             push ESI
             push EDI
-            call update_board
+            ;call update_board
             mov EAX, OFFSET world_map
             push EAX
             call display_board
@@ -318,7 +336,6 @@ game_of_life_main PROC
             jmp PAUSE_LABEL
 
         EXIT_LABEL:
-            call DumpRegs
             exit
 
 game_of_life_main ENDP
