@@ -6,21 +6,15 @@ include Irvine32.inc
 include backend.inc
 
 .data
-MAXIMUM_HEIGHT BYTE ?
-MAXIMUM_WIDTH  BYTE ?
+MAXIMUM_HEIGHT BYTE 10
+MAXIMUM_WIDTH  BYTE 10
 
 carriage_X_pos BYTE 0
 carriage_Y_pos BYTE 0
 
-world_map BYTE 0, 1, 1, 1, 0,
-               1, 0, 1, 0, 1,
-               1, 0, 0, 0, 1,
-               1, 0, 1, 0, 1,
-               0, 1, 1, 1, 1
+world_map BYTE 100 DUP(0)
 
-;world_map BYTE 100 DUP(1)
-
-board_size BYTE 5
+board_size DWORD 10
 current_key_stroke BYTE ?, 0
 
 array_position WORD 0
@@ -40,7 +34,7 @@ BOTTOM_FRAME   BYTE "<->.....................<->", 0AH, 0DH, 0
 P_CHAR BYTE "p", 0
 F_CHAR BYTE "f", 0
 Q_CHAR BYTE "q", 0
-X_CHAR BYTE "X", 0
+X_CHAR BYTE "x", 0
 W_CHAR BYTE "w", 0
 A_CHAR BYTE "a", 0
 S_CHAR BYTE "s", 0
@@ -103,14 +97,13 @@ display_MAIN_MENU ENDP
 .code
 set_cell PROC
 ; INPUT: EAX - Pointer to array
-    pop EAX
+    mov EAX, 0
     mov AL, carriage_Y_pos
-    mov AL, carriage_X_pos
-    and world_map[EAX], 1
-
-    mov EDX, OFFSET LEAVING_SET_CELL
-    call WriteString
-    call WaitMsg
+    mul MAXIMUM_WIDTH
+    add AL, carriage_X_pos
+    mov ESI, OFFSET world_map
+    add ESI, EAX
+    xor BYTE PTR [ESI], 1
 
     ret
 ; OUTPUT: EAX - Pointer to array
@@ -125,7 +118,7 @@ initialize_world_map PROC
 
     L1:
     mov AL, world_map[ESI]
-    mov EAX, 1d ; generate random integers
+    mov EAX, 2d ; generate random integers
     call RandomRange ; 0 or 1 in EAX
     mov BYTE PTR world_map[ESI], BYTE PTR AL ; store in the array
     add ESI, 1 ; next array position
@@ -142,13 +135,13 @@ display_board PROC
     call Gotoxy
 
     mov ESI, 0 ; Start counter
-    mov ECX, LENGTHOF world_map ; Maximum loops
+    mov ECX, 100 ; Maximum loops
     cld
     L1:
         cmp ESI, 0
         jz FIRST_RUN
         mov EAX, ESI
-        mov BL, board_size
+        mov BL, BYTE PTR board_size
         div BL
         cmp AH, 0
         jz PRINT_NEW_LINE_LABEL
@@ -184,11 +177,8 @@ display_board ENDP
 
 ; MAIN PROGRAM
 game_of_life_main PROC
-    call initialize_world_map ; initialize the world_map with random 1s and 0s
+    ;call initialize_world_map ; initialize the world_map with random 1s and 0s
     ; get board measurements
-    call GetMaxXY
-    mov MAXIMUM_WIDTH, DL
-    mov MAXIMUM_HEIGHT, AL
     ; display WELCOME_PROMPT
     call display_WELCOME
     ; display MAIN_MENU
@@ -203,17 +193,17 @@ game_of_life_main PROC
     call Clrscr
         INPUT_LABEL:
             mov ECX, OFFSET world_map
-            mov ESI, 5
-            mov EDI, 5
+            mov ESI, board_size
+            mov EDI, board_size
             push ECX
             push ESI
             push EDI
-            ;call update_board
+            call update_board
             mov EAX, OFFSET world_map
             push EAX
             call display_board
 
-            mov EAX, 750
+            mov EAX, 500
             call Delay
             call ReadKey ; Get keyboard input
             jz INPUT_LABEL ; If no input was given, repeat INPUT_LABEL
@@ -321,12 +311,12 @@ game_of_life_main PROC
 
         FRAME_LABEL:
             mov ECX, OFFSET world_map
-            mov ESI, 5
-            mov EDI, 5
+            mov ESI, board_size
+            mov EDI, board_size
             push ECX
             push ESI
             push EDI
-            ;call update_board
+            call update_board
             mov EAX, OFFSET world_map
             push EAX
             call display_board
