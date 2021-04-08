@@ -6,15 +6,15 @@ include Irvine32.inc
 include backend.inc
 
 .data
-MAXIMUM_HEIGHT BYTE 10
-MAXIMUM_WIDTH  BYTE 10
+MAXIMUM_HEIGHT DWORD 10
+MAXIMUM_WIDTH  DWORD 10
 
 carriage_X_pos BYTE 0
 carriage_Y_pos BYTE 0
 
 world_map BYTE 100 DUP(0)
 
-board_size DWORD 10
+board_size DWORD 100
 current_key_stroke BYTE ?, 0
 
 array_position WORD 0
@@ -116,7 +116,7 @@ initialize_world_map PROC
     mov ESI, 0
     mov ECX, 100 
 
-    L1:
+L1:
     mov AL, world_map[ESI]
     mov EAX, 2d ; generate random integers
     call RandomRange ; 0 or 1 in EAX
@@ -134,44 +134,46 @@ display_board PROC
     and EDX, 0 ; Set the values for Gotoxy at the origin, DL, DH
     call Gotoxy
 
-    mov ESI, 0 ; Start counter
-    mov ECX, 100 ; Maximum loops
+    mov ESI, 0          ; Start counter
+    mov ECX, board_size ; Maximum loops
     cld
-    L1:
-        cmp ESI, 0
-        jz FIRST_RUN
-        mov EAX, ESI
-        mov BL, BYTE PTR board_size
-        div BL
-        cmp AH, 0
-        jz PRINT_NEW_LINE_LABEL
-        FIRST_RUN:
-        mov AL, [world_map + ESI]
-        cmp AL, 1
-        jz PRINT_X_CHAR_LABEL
-        jnz PRINT_SPACE_CHAR_LABEL
-        CONTINUE_L1:
-        add ESI, 1
-        cmp ECX, 1
-        jz RET_LABEL
+L1:
+    cmp ESI, 0
+    jz FIRST_RUN
+    mov EAX, ESI
+    mov BL, BYTE PTR MAXIMUM_WIDTH
+    div BL
+    cmp AH, 0
+    jz PRINT_NEW_LINE_LABEL
+
+FIRST_RUN:
+    mov AL, [world_map + ESI]
+    cmp AL, 1
+    jz PRINT_X_CHAR_LABEL
+    jnz PRINT_SPACE_CHAR_LABEL
+
+CONTINUE_L1:
+    add ESI, 1
+    cmp ECX, 1
+    jz RET_LABEL
     loop L1
 
-    PRINT_X_CHAR_LABEL:
-        mov EDX, OFFSET X_CHAR
-        call WriteString
-        jmp CONTINUE_L1
+PRINT_X_CHAR_LABEL:
+    mov EDX, OFFSET X_CHAR
+    call WriteString
+    jmp CONTINUE_L1
 
-    PRINT_SPACE_CHAR_LABEL:
-        mov EDX, OFFSET SPACE_CHAR
-        call WriteString
-        jmp CONTINUE_L1
+PRINT_SPACE_CHAR_LABEL:
+    mov EDX, OFFSET SPACE_CHAR
+    call WriteString
+    jmp CONTINUE_L1
 
-    PRINT_NEW_LINE_LABEL:
-        call Crlf
-        jmp FIRST_RUN
+PRINT_NEW_LINE_LABEL:
+    call Crlf
+    jmp FIRST_RUN
 
-    RET_LABEL:
-        ret
+RET_LABEL:
+    ret
 ; OUTPUT: NONE
 display_board ENDP
 
@@ -187,146 +189,149 @@ game_of_life_main PROC
     mov DH, carriage_Y_pos
     call Gotoxy
     ; while user doesnt press "q"
-    MAIN_LABEL:
+MAIN_LABEL:
     mov EAX, white + (black * 16)
     call SetTextColor
     call Clrscr
-        INPUT_LABEL:
-            mov ECX, OFFSET world_map
-            mov ESI, board_size
-            mov EDI, board_size
-            push ECX
-            push ESI
-            push EDI
-            call update_board
-            mov EAX, OFFSET world_map
-            push EAX
-            call display_board
 
-            mov EAX, 500
-            call Delay
-            call ReadKey ; Get keyboard input
-            jz INPUT_LABEL ; If no input was given, repeat INPUT_LABEL
-            mov current_key_stroke, AL ; current_key_stroke = ReadKey()
-            ; check if p
-            mov AL, P_CHAR
-                cmp AL, current_key_stroke
-                jz PAUSE_LABEL ; if current_key_stroke == 'p'
-            mov AL, X_CHAR
-                cmp AL, current_key_stroke
-                jz CALL_SET_CELL_LABEL ; if current_key_stroke == 'x'
-            ; check if f
-            mov AL, F_CHAR
-                cmp AL, current_key_stroke
-                jz FRAME_LABEL ; if current_key_stroke == 'f'
-            ; check if q
-            mov AL, Q_CHAR
-                cmp AL, current_key_stroke
-                jz EXIT_LABEL ; if current_key_stroke == 'q'
-            ; check if w, a, s, OR d
-            mov AL, W_CHAR
-                cmp AL, current_key_stroke
-                jz MOVE_CELL_UP_LABEL ; if current_key_stroke == 'w'
-            mov AL, A_CHAR
-                cmp AL, current_key_stroke
-                jz MOVE_CELL_LEFT_LABEL ; if current_key_stroke == 'a'
-            mov AL, S_CHAR
-                cmp AL, current_key_stroke
-                jz MOVE_CELL_DOWN_LABEL ; if current_key_stroke == 's'
-            mov AL, D_CHAR
-                cmp AL, current_key_stroke
-                jz MOVE_CELL_RIGHT_LABEL ; if current_key_stroke == 'd'
+INPUT_LABEL:
+    mov ESI, OFFSET world_map
+    mov EAX, MAXIMUM_HEIGHT
+    mov EBX, MAXIMUM_WIDTH
+    push ESI
+    push EAX
+    push EBX
+    call update_board
+    mov ESI, OFFSET world_map
+    push ESI
+    call display_board
 
-            jnz INPUT_LABEL ; if no match to p, f, q, w, a, s, d, jump to INPUT_LABEL
+    mov EAX, 500
+    call Delay
+    call ReadKey ; Get keyboard input
+    jz INPUT_LABEL ; If no input was given, repeat INPUT_LABEL
+    mov current_key_stroke, AL ; current_key_stroke = ReadKey()
+    ; check if p
+    mov AL, P_CHAR
+    cmp AL, current_key_stroke
+    jz PAUSE_LABEL ; if current_key_stroke == 'p'
+    mov AL, X_CHAR
+    cmp AL, current_key_stroke
+    jz CALL_SET_CELL_LABEL ; if current_key_stroke == 'x'
+    ; check if f
+    mov AL, F_CHAR
+    cmp AL, current_key_stroke
+    jz FRAME_LABEL ; if current_key_stroke == 'f'
+    ; check if q
+    mov AL, Q_CHAR
+    cmp AL, current_key_stroke
+    jz EXIT_LABEL ; if current_key_stroke == 'q'
+    ; check if w, a, s, OR d
+    mov AL, W_CHAR
+    cmp AL, current_key_stroke
+    jz MOVE_CELL_UP_LABEL ; if current_key_stroke == 'w'
+    mov AL, A_CHAR
+    cmp AL, current_key_stroke
+    jz MOVE_CELL_LEFT_LABEL ; if current_key_stroke == 'a'
+    mov AL, S_CHAR
+    cmp AL, current_key_stroke
+    jz MOVE_CELL_DOWN_LABEL ; if current_key_stroke == 's'
+    mov AL, D_CHAR
+    cmp AL, current_key_stroke
+    jz MOVE_CELL_RIGHT_LABEL ; if current_key_stroke == 'd'
 
-        PAUSE_LABEL:
-            mov EAX, 10
-            call Delay
-            call ReadKey ; Get keyboard input
-            jz PAUSE_LABEL ; If no input was given, repeat PAUSE_LABEL
-            mov current_key_stroke, AL ; current_key_stroke = ReadKey()
-            mov AL, Q_CHAR
-                cmp AL, current_key_stroke ; if current_key_stroke == 'q'
-                jz EXIT_LABEL
-            mov AL, P_CHAR
-                cmp AL, current_key_stroke ; if current_key_stroke == 'p'
-                jz INPUT_LABEL
-            mov AL, F_CHAR
-                cmp AL, current_key_stroke ; if current_key_stroke == 'f'
-                jz FRAME_LABEL
-            mov AL, X_CHAR
-                cmp AL, current_key_stroke ; if current_key_stroke == 'x'
-                jz CALL_SET_CELL_LABEL
-            ; check if w, a, s, OR d
-            mov AL, W_CHAR
-                cmp AL, current_key_stroke
-                jz MOVE_CELL_UP_LABEL ; if current_key_stroke == 'w'
-            mov AL, A_CHAR
-                cmp AL, current_key_stroke
-                jz MOVE_CELL_LEFT_LABEL ; if current_key_stroke == 'a'
-            mov AL, S_CHAR
-                cmp AL, current_key_stroke
-                jz MOVE_CELL_DOWN_LABEL ; if current_key_stroke == 's'
-            mov AL, D_CHAR
-                cmp AL, current_key_stroke
-                jz MOVE_CELL_RIGHT_LABEL ; if current_key_stroke == 'd'
-            jnz PAUSE_LABEL
+    jnz INPUT_LABEL ; if no match to p, f, q, w, a, s, d, jump to INPUT_LABEL
 
-        MOVE_CELL_UP_LABEL:
-            sub carriage_Y_pos, 1
-            mov DL, carriage_X_pos
-            mov DH, carriage_Y_pos
-            call Gotoxy
-            jmp PAUSE_LABEL
+PAUSE_LABEL:
+    mov EAX, 10
+    call Delay
+    call ReadKey ; Get keyboard input
+    jz PAUSE_LABEL ; If no input was given, repeat PAUSE_LABEL
+    mov current_key_stroke, AL ; current_key_stroke = ReadKey()
+    mov AL, Q_CHAR
+    cmp AL, current_key_stroke ; if current_key_stroke == 'q'
+    jz EXIT_LABEL
+    mov AL, P_CHAR
+    cmp AL, current_key_stroke ; if current_key_stroke == 'p'
+    jz INPUT_LABEL
+    mov AL, F_CHAR
+    cmp AL, current_key_stroke ; if current_key_stroke == 'f'
+    jz FRAME_LABEL
+    mov AL, X_CHAR
+    cmp AL, current_key_stroke ; if current_key_stroke == 'x'
+    jz CALL_SET_CELL_LABEL
+    ; check if w, a, s, OR d
+    mov AL, W_CHAR
+    cmp AL, current_key_stroke
+    jz MOVE_CELL_UP_LABEL ; if current_key_stroke == 'w'
+    mov AL, A_CHAR
+    cmp AL, current_key_stroke
+    jz MOVE_CELL_LEFT_LABEL ; if current_key_stroke == 'a'
+    mov AL, S_CHAR
+    cmp AL, current_key_stroke
+    jz MOVE_CELL_DOWN_LABEL ; if current_key_stroke == 's'
+    mov AL, D_CHAR
+    cmp AL, current_key_stroke
+    jz MOVE_CELL_RIGHT_LABEL ; if current_key_stroke == 'd'
+    jnz PAUSE_LABEL
 
-        MOVE_CELL_LEFT_LABEL:
-            sub carriage_X_pos, 1
-            mov DL, carriage_X_pos
-            mov DH, carriage_Y_pos
-            call Gotoxy
-            jmp PAUSE_LABEL
+    ; TODO Check bounds on movement
 
-        MOVE_CELL_DOWN_LABEL:
-            add carriage_Y_pos, 1
-            mov DL, carriage_X_pos
-            mov DH, carriage_Y_pos
-            call Gotoxy
-            jmp PAUSE_LABEL
+MOVE_CELL_UP_LABEL:
+    sub carriage_Y_pos, 1
+    mov DL, carriage_X_pos
+    mov DH, carriage_Y_pos
+    call Gotoxy
+    jmp PAUSE_LABEL
 
-        MOVE_CELL_RIGHT_LABEL:
-            add carriage_X_pos, 1
-            mov DL, carriage_X_pos
-            mov DH, carriage_Y_pos
-            call Gotoxy
-            jmp PAUSE_LABEL
+MOVE_CELL_LEFT_LABEL:
+    sub carriage_X_pos, 1
+    mov DL, carriage_X_pos
+    mov DH, carriage_Y_pos
+    call Gotoxy
+    jmp PAUSE_LABEL
 
-        CALL_SET_CELL_LABEL:
-            mov EAX, OFFSET world_map
-            push EAX
-            call set_cell
-            mov EAX, OFFSET world_map
-            push EAX
-            call display_board
-            jmp PAUSE_LABEL
+MOVE_CELL_DOWN_LABEL:
+    add carriage_Y_pos, 1
+    mov DL, carriage_X_pos
+    mov DH, carriage_Y_pos
+    call Gotoxy
+    jmp PAUSE_LABEL
 
-        FRAME_LABEL:
-            mov ECX, OFFSET world_map
-            mov ESI, board_size
-            mov EDI, board_size
-            push ECX
-            push ESI
-            push EDI
-            call update_board
-            mov EAX, OFFSET world_map
-            push EAX
-            call display_board
-            mov DL, carriage_X_pos
-            mov DH, carriage_Y_pos
-            call Gotoxy
-            jmp PAUSE_LABEL
+MOVE_CELL_RIGHT_LABEL:
+    add carriage_X_pos, 1
+    mov DL, carriage_X_pos
+    mov DH, carriage_Y_pos
+    call Gotoxy
+    jmp PAUSE_LABEL
 
-        EXIT_LABEL:
-            exit
+CALL_SET_CELL_LABEL:
+    mov ESI, OFFSET world_map
+    push ESI
+    call set_cell
+    mov ESI, OFFSET world_map
+    push ESI
+    call display_board
+    jmp PAUSE_LABEL
+
+FRAME_LABEL:
+    mov ESI, OFFSET world_map
+    mov EAX, MAXIMUM_HEIGHT
+    mov EBX, MAXIMUM_WIDTH
+    push ESI
+    push EAX
+    push EBX
+    call update_board
+    mov ESI, OFFSET world_map
+    push ESI
+    call display_board
+    mov DL, carriage_X_pos
+    mov DH, carriage_Y_pos
+    call Gotoxy
+    jmp PAUSE_LABEL
+
+EXIT_LABEL:
+    exit
 
 game_of_life_main ENDP
 END game_of_life_main
