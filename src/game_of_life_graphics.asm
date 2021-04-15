@@ -6,8 +6,8 @@ include Irvine32.inc
 include backend.inc
 
 .data
-MAXIMUM_HEIGHT BYTE 100
-MAXIMUM_WIDTH  BYTE 100
+MAXIMUM_HEIGHT BYTE 24
+MAXIMUM_WIDTH  BYTE 79
 
 carriage_X_pos BYTE 0
 carriage_Y_pos BYTE 0
@@ -189,8 +189,11 @@ game_of_life_main PROC
     invoke GetProcessHeap
     mov hHeap, eax
 
-    ;call initialize_world_map ; initialize the world_map with random 1s and 0s
     ; get board measurements
+    call GetMaxXY
+    mov MAXIMUM_HEIGHT, AL
+    mov MAXIMUM_WIDTH, DL
+
     mov eax, 0
     mov al, MAXIMUM_HEIGHT
     mul MAXIMUM_WIDTH

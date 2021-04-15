@@ -109,7 +109,7 @@ Initialization:
 Bounds_Check:
 	mov eax, [ebp + 4]
 	mov edx, 0
-	div dword ptr [ebp + 12]
+	div dword ptr [ebp + 8]
 	; EAX has y-pos, EDX has x-pos
 	add edx, [esi]
 	add eax, [esi + 4]
@@ -125,7 +125,7 @@ Bounds_Check:
 	jmp Alive_Check
 Alive_Check:
 	push edx
-	mul dword ptr [ebp + 12]
+	mul dword ptr [ebp + 8]
 	pop edx
 	add eax, edx
 
