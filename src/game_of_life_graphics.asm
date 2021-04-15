@@ -6,18 +6,20 @@ include Irvine32.inc
 include backend.inc
 
 .data
-MAXIMUM_HEIGHT BYTE 10
-MAXIMUM_WIDTH  BYTE 10
+MAXIMUM_HEIGHT BYTE 100
+MAXIMUM_WIDTH  BYTE 100
 
 carriage_X_pos BYTE 0
 carriage_Y_pos BYTE 0
 
-world_map BYTE 100 DUP(0)
+world_map DWORD ?
 
-board_size DWORD 100
+board_size DWORD ?
 current_key_stroke BYTE ?, 0
 
 array_position WORD 0
+
+hHeap DWORD ?
 
 WELCOME_PROMPT BYTE "<->                                          John Conway's Game of Life                                           <->", 0AH, 0DH, 0
 MAIN_MENU      BYTE "<->.......Controls......<->", 0AH, 0DH, 0
@@ -101,7 +103,7 @@ set_cell PROC
     mov AL, carriage_Y_pos
     mul MAXIMUM_WIDTH
     add AL, carriage_X_pos
-    mov ESI, OFFSET world_map
+    mov ESI, world_map
     add ESI, EAX
     xor BYTE PTR [ESI], 1
 
@@ -117,10 +119,12 @@ initialize_world_map PROC
     mov ECX, 100 
 
 L1:
-    mov AL, world_map[ESI]
+    mov EDI, world_map
+    add EDI, ESI
+    mov AL, BYTE PTR [EDI]
     mov EAX, 2d ; generate random integers
     call RandomRange ; 0 or 1 in EAX
-    mov BYTE PTR world_map[ESI], BYTE PTR AL ; store in the array
+    mov BYTE PTR [EDI], BYTE PTR AL ; store in the array
     add ESI, 1 ; next array position
     loop L1
 
@@ -147,7 +151,9 @@ L1:
     jz PRINT_NEW_LINE_LABEL
 
 FIRST_RUN:
-    mov AL, [world_map + ESI]
+    mov EDI, world_map
+    add EDI, ESI
+    mov AL, BYTE PTR [EDI]
     cmp AL, 1
     jz PRINT_X_CHAR_LABEL
     jnz PRINT_SPACE_CHAR_LABEL
@@ -179,8 +185,19 @@ display_board ENDP
 
 ; MAIN PROGRAM
 game_of_life_main PROC
+    ; Initializing the heap TODO (Handle errors?)
+    invoke GetProcessHeap
+    mov hHeap, eax
+
     ;call initialize_world_map ; initialize the world_map with random 1s and 0s
     ; get board measurements
+    mov eax, 0
+    mov al, MAXIMUM_HEIGHT
+    mul MAXIMUM_WIDTH
+    mov board_size, eax
+    invoke HeapAlloc, hHeap, HEAP_ZERO_MEMORY, board_size
+    mov world_map, eax
+
     ; display WELCOME_PROMPT
     call display_WELCOME
     ; display MAIN_MENU
@@ -195,7 +212,7 @@ MAIN_LABEL:
     call Clrscr
 
 INPUT_LABEL:
-    mov ESI, OFFSET world_map
+    mov ESI, world_map
     mov EAX, 0
     mov AL, MAXIMUM_HEIGHT
     mov EBX, 0
@@ -204,7 +221,7 @@ INPUT_LABEL:
     push EAX
     push EBX
     call update_board
-    mov ESI, OFFSET world_map
+    mov ESI, world_map
     push ESI
     call display_board
 
@@ -320,16 +337,16 @@ MOVE_CELL_RIGHT_LABEL:
     jmp PAUSE_LABEL
 
 CALL_SET_CELL_LABEL:
-    mov ESI, OFFSET world_map
+    mov ESI, world_map
     push ESI
     call set_cell
-    mov ESI, OFFSET world_map
+    mov ESI, world_map
     push ESI
     call display_board
     jmp PAUSE_LABEL
 
 FRAME_LABEL:
-    mov ESI, OFFSET world_map
+    mov ESI, world_map
     mov EAX, 0
     mov AL, MAXIMUM_HEIGHT
     mov EBX, 0
@@ -338,7 +355,7 @@ FRAME_LABEL:
     push EAX
     push EBX
     call update_board
-    mov ESI, OFFSET world_map
+    mov ESI, world_map
     push ESI
     call display_board
     mov DL, carriage_X_pos
@@ -347,6 +364,7 @@ FRAME_LABEL:
     jmp PAUSE_LABEL
 
 EXIT_LABEL:
+    INVOKE HeapFree, hHeap, 0, world_map
     exit
 
 game_of_life_main ENDP
