@@ -6,8 +6,8 @@ include Irvine32.inc
 include backend.inc
 
 .data
-MAXIMUM_HEIGHT DWORD 10
-MAXIMUM_WIDTH  DWORD 10
+MAXIMUM_HEIGHT BYTE 10
+MAXIMUM_WIDTH  BYTE 10
 
 carriage_X_pos BYTE 0
 carriage_Y_pos BYTE 0
@@ -141,7 +141,7 @@ L1:
     cmp ESI, 0
     jz FIRST_RUN
     mov EAX, ESI
-    mov BL, BYTE PTR MAXIMUM_WIDTH
+    mov BL, MAXIMUM_WIDTH
     div BL
     cmp AH, 0
     jz PRINT_NEW_LINE_LABEL
@@ -196,8 +196,10 @@ MAIN_LABEL:
 
 INPUT_LABEL:
     mov ESI, OFFSET world_map
-    mov EAX, MAXIMUM_HEIGHT
-    mov EBX, MAXIMUM_WIDTH
+    mov EAX, 0
+    mov AL, MAXIMUM_HEIGHT
+    mov EBX, 0
+    mov BL, MAXIMUM_WIDTH
     push ESI
     push EAX
     push EBX
@@ -278,6 +280,8 @@ PAUSE_LABEL:
     ; TODO Check bounds on movement
 
 MOVE_CELL_UP_LABEL:
+    cmp carriage_Y_pos, 0
+    je PAUSE_LABEL
     sub carriage_Y_pos, 1
     mov DL, carriage_X_pos
     mov DH, carriage_Y_pos
@@ -285,6 +289,8 @@ MOVE_CELL_UP_LABEL:
     jmp PAUSE_LABEL
 
 MOVE_CELL_LEFT_LABEL:
+    cmp carriage_X_pos, 0
+    je PAUSE_LABEL
     sub carriage_X_pos, 1
     mov DL, carriage_X_pos
     mov DH, carriage_Y_pos
@@ -292,6 +298,10 @@ MOVE_CELL_LEFT_LABEL:
     jmp PAUSE_LABEL
 
 MOVE_CELL_DOWN_LABEL:
+    mov AL, MAXIMUM_HEIGHT
+    sub AL, 1
+    cmp carriage_Y_pos, AL
+    je PAUSE_LABEL
     add carriage_Y_pos, 1
     mov DL, carriage_X_pos
     mov DH, carriage_Y_pos
@@ -299,6 +309,10 @@ MOVE_CELL_DOWN_LABEL:
     jmp PAUSE_LABEL
 
 MOVE_CELL_RIGHT_LABEL:
+    mov AL, MAXIMUM_WIDTH
+    sub AL, 1
+    cmp carriage_X_pos, AL
+    je PAUSE_LABEL
     add carriage_X_pos, 1
     mov DL, carriage_X_pos
     mov DH, carriage_Y_pos
@@ -316,8 +330,10 @@ CALL_SET_CELL_LABEL:
 
 FRAME_LABEL:
     mov ESI, OFFSET world_map
-    mov EAX, MAXIMUM_HEIGHT
-    mov EBX, MAXIMUM_WIDTH
+    mov EAX, 0
+    mov AL, MAXIMUM_HEIGHT
+    mov EBX, 0
+    mov BL, MAXIMUM_WIDTH
     push ESI
     push EAX
     push EBX
