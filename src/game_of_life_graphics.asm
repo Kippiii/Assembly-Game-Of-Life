@@ -179,6 +179,9 @@ PRINT_NEW_LINE_LABEL:
     jmp FIRST_RUN
 
 RET_LABEL:
+    mov DL, carriage_X_pos
+    mov DH, carriage_Y_pos
+    call Gotoxy
     ret
 ; OUTPUT: NONE
 display_board ENDP
