@@ -5,6 +5,7 @@
 ; IDEAS
 ; Nicer cursor?
 ; Random boards
+; Make pause have less options
 
 include Irvine32.inc
 include backend.inc
@@ -275,30 +276,11 @@ INPUT_LABEL:
     mov AL, P_CHAR
     cmp AL, current_key_stroke
     jz PAUSE_LABEL ; if current_key_stroke == 'p'
-    mov AL, X_CHAR
-    cmp AL, current_key_stroke
-    jz CALL_SET_CELL_LABEL ; if current_key_stroke == 'x'
-    ; check if f
-    mov AL, F_CHAR
-    cmp AL, current_key_stroke
-    jz FRAME_LABEL ; if current_key_stroke == 'f'
     ; check if q
     mov AL, Q_CHAR
     cmp AL, current_key_stroke
     jz EXIT_LABEL ; if current_key_stroke == 'q'
     ; check if w, a, s, OR d
-    mov AL, W_CHAR
-    cmp AL, current_key_stroke
-    jz MOVE_CELL_UP_LABEL ; if current_key_stroke == 'w'
-    mov AL, A_CHAR
-    cmp AL, current_key_stroke
-    jz MOVE_CELL_LEFT_LABEL ; if current_key_stroke == 'a'
-    mov AL, S_CHAR
-    cmp AL, current_key_stroke
-    jz MOVE_CELL_DOWN_LABEL ; if current_key_stroke == 's'
-    mov AL, D_CHAR
-    cmp AL, current_key_stroke
-    jz MOVE_CELL_RIGHT_LABEL ; if current_key_stroke == 'd'
 
     jnz INPUT_LABEL ; if no match to p, f, q, w, a, s, d, jump to INPUT_LABEL
 
