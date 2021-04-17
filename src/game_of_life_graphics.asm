@@ -2,6 +2,11 @@
 ; prompts user for input
 ; displays current board
 
+; IDEAS
+; Only updates what needs to be updated
+; Nicer cursor?
+; Random boards
+
 include Irvine32.inc
 include backend.inc
 
@@ -165,11 +170,15 @@ CONTINUE_L1:
     loop L1
 
 PRINT_X_CHAR_LABEL:
-    mov EDX, OFFSET X_CHAR
+    mov EAX, yellow + (white * 16)
+    call SetTextColor
+    mov EDX, OFFSET SPACE_CHAR
     call WriteString
     jmp CONTINUE_L1
 
 PRINT_SPACE_CHAR_LABEL:
+    mov EAX, yellow + (blue * 16)
+    call SetTextColor
     mov EDX, OFFSET SPACE_CHAR
     call WriteString
     jmp CONTINUE_L1
