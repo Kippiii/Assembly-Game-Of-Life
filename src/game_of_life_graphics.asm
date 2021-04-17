@@ -36,6 +36,7 @@ PROMPT_5       BYTE "q Quit Game.............<->", 0AH, 0DH, 0
 PROMPT_6       BYTE "p Toggle pause/continue.<->", 0AH, 0DH, 0
 PROMPT_7       BYTE "f Step one frame........<->", 0AH, 0DH, 0
 PROMPT_8       BYTE "x Flip Cell.............<->", 0AH, 0DH, 0
+PROMPT_9       BYTE "c Clear all cells.......<->", 0AH, 0DH, 0
 BOTTOM_FRAME   BYTE "<->.....................<->", 0AH, 0DH, 0
 
 P_CHAR BYTE "p", 0
@@ -46,6 +47,7 @@ W_CHAR BYTE "w", 0
 A_CHAR BYTE "a", 0
 S_CHAR BYTE "s", 0
 D_CHAR BYTE "d", 0
+C_CHAR BYTE "c", 0
 SPACE_CHAR BYTE " ", 0
 
 LEAVING_SET_CELL BYTE "LEAVING set_cell", 0
@@ -90,6 +92,9 @@ display_MAIN_MENU PROC
 
     mov EDX, OFFSET PROMPT_8
     call WriteString ; Print PROMPT_8
+
+    mov EDX, OFFSET PROMPT_9
+    call WriteString ; Print PROMPT_9
 
     mov EDX, OFFSET BOTTOM_FRAME
     call WriteString ; Print BOTTOM_FRAME
@@ -310,7 +315,10 @@ PAUSE_LABEL:
     mov AL, D_CHAR
     cmp AL, current_key_stroke ; if current_key_stroke == 'd'
     jz MOVE_CELL_RIGHT_LABEL
-    jnz PAUSE_LABEL
+    mov AL, C_CHAR
+    cmp AL, current_key_stroke ; if current_key_stroke == 'c'
+    jz CLEAR_MAP
+    jmp PAUSE_LABEL
 
 MOVE_CELL_UP_LABEL:
     cmp carriage_Y_pos, 0
@@ -374,6 +382,17 @@ FRAME_LABEL:
     mov DL, carriage_X_pos
     mov DH, carriage_Y_pos
     call Gotoxy
+    jmp PAUSE_LABEL
+
+CLEAR_MAP:
+    mov ecx, board_size
+    mov esi, world_map
+CLEAR_MAP_LOOP:
+    mov byte ptr [esi], 0
+    inc esi
+    loop CLEAR_MAP_LOOP
+
+    call display_board
     jmp PAUSE_LABEL
 
 EXIT_LABEL:
