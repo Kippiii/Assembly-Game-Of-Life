@@ -1,1 +1,2 @@
 update_board PROTO
+copy_array PROTO

@@ -3,9 +3,9 @@
 ; displays current board
 
 ; IDEAS
-; Only updates what needs to be updated
 ; Nicer cursor?
 ; Random boards
+; Make is start paused
 
 include Irvine32.inc
 include backend.inc
@@ -17,6 +17,7 @@ MAXIMUM_WIDTH  BYTE 79
 carriage_X_pos BYTE 0
 carriage_Y_pos BYTE 0
 
+prev_map DWORD ?
 world_map DWORD ?
 
 board_size DWORD ?
@@ -107,7 +108,9 @@ set_cell PROC
     mov EAX, 0
     mov AL, carriage_Y_pos
     mul MAXIMUM_WIDTH
-    add AL, carriage_X_pos
+    mov bx, 0
+    mov bl, carriage_X_pos
+    add ax, bx
     mov ESI, world_map
     add ESI, EAX
     xor BYTE PTR [ESI], 1
@@ -147,13 +150,20 @@ display_board PROC
     mov ECX, board_size ; Maximum loops
     cld
 L1:
-    cmp ESI, 0
-    jz FIRST_RUN
-    mov EAX, ESI
-    mov BL, MAXIMUM_WIDTH
-    div BL
-    cmp AH, 0
-    jz PRINT_NEW_LINE_LABEL
+    mov edi, world_map
+    add edi, esi
+    mov al, byte ptr [edi]
+    mov edi, prev_map
+    add edi, esi
+    cmp al, byte ptr [edi]
+    jz CONTINUE_L1
+
+    mov eax, esi
+    mov bl, MAXIMUM_WIDTH
+    div bl
+    mov DL, ah
+    mov DH, al
+    call Gotoxy
 
 FIRST_RUN:
     mov EDI, world_map
@@ -183,14 +193,15 @@ PRINT_SPACE_CHAR_LABEL:
     call WriteString
     jmp CONTINUE_L1
 
-PRINT_NEW_LINE_LABEL:
-    call Crlf
-    jmp FIRST_RUN
-
 RET_LABEL:
     mov DL, carriage_X_pos
     mov DH, carriage_Y_pos
     call Gotoxy
+
+    push world_map
+    push prev_map
+    push board_size
+    call copy_array
     ret
 ; OUTPUT: NONE
 display_board ENDP
@@ -212,6 +223,15 @@ game_of_life_main PROC
     mov board_size, eax
     invoke HeapAlloc, hHeap, HEAP_ZERO_MEMORY, board_size
     mov world_map, eax
+    invoke HeapAlloc, hHeap, HEAP_ZERO_MEMORY, board_size
+    mov prev_map, eax
+
+    mov esi, prev_map
+    mov ecx, board_size
+PREV_ARR_MAP:
+    mov byte ptr [esi], 2
+    inc esi
+    loop PREV_ARR_MAP
 
     ; display WELCOME_PROMPT
     call display_WELCOME
@@ -232,10 +252,12 @@ INPUT_LABEL:
     mov AL, MAXIMUM_HEIGHT
     mov EBX, 0
     mov BL, MAXIMUM_WIDTH
+
     push ESI
     push EAX
     push EBX
     call update_board
+
     mov ESI, world_map
     push ESI
     call display_board
@@ -366,10 +388,12 @@ FRAME_LABEL:
     mov AL, MAXIMUM_HEIGHT
     mov EBX, 0
     mov BL, MAXIMUM_WIDTH
+
     push ESI
     push EAX
     push EBX
     call update_board
+
     mov ESI, world_map
     push ESI
     call display_board

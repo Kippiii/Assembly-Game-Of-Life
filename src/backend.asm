@@ -151,4 +151,28 @@ Ending:
 	ret
 get_neighbor_count endp
 
+; INPUT: source, dest, size
+copy_array proc
+Initialization:
+	mov ebp, esp
+	push ebp
+
+	mov ecx, [ebp + 4]
+	mov esi, [ebp + 12]
+	mov edi, [ebp + 8]
+My_Loop:
+	mov al, byte ptr [esi]
+	mov byte ptr [edi], al
+	inc esi
+	inc edi
+	loop My_Loop
+
+Ending:
+	mov esp, ebp
+	pop eax
+	add esp, 12
+	push eax
+	ret
+copy_array endp
+
 end
