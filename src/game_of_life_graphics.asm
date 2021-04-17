@@ -5,7 +5,6 @@
 ; IDEAS
 ; Nicer cursor?
 ; Random boards
-; Make is start paused
 
 include Irvine32.inc
 include backend.inc
@@ -245,6 +244,11 @@ MAIN_LABEL:
     mov EAX, white + (black * 16)
     call SetTextColor
     call Clrscr
+    
+    mov ESI, world_map
+    push ESI
+    call display_board
+    jmp PAUSE_LABEL
 
 INPUT_LABEL:
     mov ESI, world_map
