@@ -5,7 +5,6 @@
 ; IDEAS
 ; Nicer cursor?
 ; Random boards
-; Make pause have less options
 
 include Irvine32.inc
 include backend.inc
@@ -104,19 +103,19 @@ display_MAIN_MENU ENDP
 
 .code
 set_cell PROC
-; INPUT: EAX - Pointer to array
+; INPUT: NONE
     mov EAX, 0
     mov AL, carriage_Y_pos
     mul MAXIMUM_WIDTH
-    mov bx, 0
-    mov bl, carriage_X_pos
-    add ax, bx
+    mov BX, 0
+    mov BL, carriage_X_pos
+    add AX, BX
     mov ESI, world_map
     add ESI, EAX
     xor BYTE PTR [ESI], 1
 
     ret
-; OUTPUT: EAX - Pointer to array
+; OUTPUT: NONE
 set_cell ENDP
 
 .code
@@ -142,14 +141,15 @@ initialize_world_map ENDP
 
 .code
 display_board PROC
-; INPUT: EAX, address to array
-    and EDX, 0 ; Set the values for Gotoxy at the origin, DL, DH
+; INPUT: NONE
+    and edx, 0 ; Set the values for Gotoxy at the origin, DL, DH
     call Gotoxy
 
-    mov ESI, 0          ; Start counter
-    mov ECX, board_size ; Maximum loops
+    mov esi, 0          ; Start counter
+    mov ecx, board_size ; Maximum loops
     cld
 L1:
+    ; Only updating when the value has been updating
     mov edi, world_map
     add edi, esi
     mov al, byte ptr [edi]
@@ -161,15 +161,15 @@ L1:
     mov eax, esi
     mov bl, MAXIMUM_WIDTH
     div bl
-    mov DL, ah
-    mov DH, al
+    mov dl, ah
+    mov dh, al
     call Gotoxy
 
 FIRST_RUN:
-    mov EDI, world_map
-    add EDI, ESI
-    mov AL, BYTE PTR [EDI]
-    cmp AL, 1
+    mov edi, world_map
+    add edi, esi
+    mov al, BYTE PTR [edi]
+    cmp al, 1
     jz PRINT_X_CHAR_LABEL
     jnz PRINT_SPACE_CHAR_LABEL
 
@@ -246,8 +246,6 @@ MAIN_LABEL:
     call SetTextColor
     call Clrscr
     
-    mov ESI, world_map
-    push ESI
     call display_board
     jmp PAUSE_LABEL
 
@@ -263,8 +261,6 @@ INPUT_LABEL:
     push EBX
     call update_board
 
-    mov ESI, world_map
-    push ESI
     call display_board
 
     mov EAX, 500
@@ -302,22 +298,19 @@ PAUSE_LABEL:
     mov AL, X_CHAR
     cmp AL, current_key_stroke ; if current_key_stroke == 'x'
     jz CALL_SET_CELL_LABEL
-    ; check if w, a, s, OR d
     mov AL, W_CHAR
-    cmp AL, current_key_stroke
-    jz MOVE_CELL_UP_LABEL ; if current_key_stroke == 'w'
+    cmp AL, current_key_stroke ; if current_key_stroke == 'w'
+    jz MOVE_CELL_UP_LABEL
     mov AL, A_CHAR
-    cmp AL, current_key_stroke
-    jz MOVE_CELL_LEFT_LABEL ; if current_key_stroke == 'a'
+    cmp AL, current_key_stroke ; if current_key_stroke == 'a'
+    jz MOVE_CELL_LEFT_LABEL
     mov AL, S_CHAR
-    cmp AL, current_key_stroke
-    jz MOVE_CELL_DOWN_LABEL ; if current_key_stroke == 's'
+    cmp AL, current_key_stroke ; if current_key_stroke == 's'
+    jz MOVE_CELL_DOWN_LABEL
     mov AL, D_CHAR
-    cmp AL, current_key_stroke
-    jz MOVE_CELL_RIGHT_LABEL ; if current_key_stroke == 'd'
+    cmp AL, current_key_stroke ; if current_key_stroke == 'd'
+    jz MOVE_CELL_RIGHT_LABEL
     jnz PAUSE_LABEL
-
-    ; TODO Check bounds on movement
 
 MOVE_CELL_UP_LABEL:
     cmp carriage_Y_pos, 0
@@ -360,11 +353,7 @@ MOVE_CELL_RIGHT_LABEL:
     jmp PAUSE_LABEL
 
 CALL_SET_CELL_LABEL:
-    mov ESI, world_map
-    push ESI
     call set_cell
-    mov ESI, world_map
-    push ESI
     call display_board
     jmp PAUSE_LABEL
 
@@ -380,9 +369,8 @@ FRAME_LABEL:
     push EBX
     call update_board
 
-    mov ESI, world_map
-    push ESI
     call display_board
+
     mov DL, carriage_X_pos
     mov DH, carriage_Y_pos
     call Gotoxy
