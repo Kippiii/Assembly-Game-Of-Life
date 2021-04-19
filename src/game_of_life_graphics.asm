@@ -37,6 +37,7 @@ PROMPT_6       BYTE "p Toggle pause/continue.<->", 0AH, 0DH, 0
 PROMPT_7       BYTE "f Step one frame........<->", 0AH, 0DH, 0
 PROMPT_8       BYTE "x Flip Cell.............<->", 0AH, 0DH, 0
 PROMPT_9       BYTE "c Clear all cells.......<->", 0AH, 0DH, 0
+PROMPT_10      BYTE "r Randomize the grid....<->", 0AH, 0DH, 0
 BOTTOM_FRAME   BYTE "<->.....................<->", 0AH, 0DH, 0
 
 P_CHAR BYTE "p", 0
@@ -48,6 +49,7 @@ A_CHAR BYTE "a", 0
 S_CHAR BYTE "s", 0
 D_CHAR BYTE "d", 0
 C_CHAR BYTE "c", 0
+R_CHAR BYTE "r", 0
 SPACE_CHAR BYTE " ", 0
 
 LEAVING_SET_CELL BYTE "LEAVING set_cell", 0
@@ -95,6 +97,9 @@ display_MAIN_MENU PROC
 
     mov EDX, OFFSET PROMPT_9
     call WriteString ; Print PROMPT_9
+
+    mov EDX, OFFSET PROMPT_10
+    call WriteString ; Print PROMPT_10
 
     mov EDX, OFFSET BOTTOM_FRAME
     call WriteString ; Print BOTTOM_FRAME
@@ -231,8 +236,6 @@ game_of_life_main PROC
     invoke HeapAlloc, hHeap, HEAP_ZERO_MEMORY, board_size
     mov prev_map, eax
 
-    call initialize_world_map ; initialize a random board
-
     mov esi, prev_map
     mov ecx, board_size
 PREV_ARR_MAP:
@@ -320,6 +323,9 @@ PAUSE_LABEL:
     mov AL, C_CHAR
     cmp AL, current_key_stroke ; if current_key_stroke == 'c'
     jz CLEAR_MAP
+    mov AL, R_CHAR
+    cmp AL, current_key_stroke ; if current_key_stroke == 'r'
+    jz RANDOM_MAP
     jmp PAUSE_LABEL
 
 MOVE_CELL_UP_LABEL:
@@ -394,6 +400,11 @@ CLEAR_MAP_LOOP:
     inc esi
     loop CLEAR_MAP_LOOP
 
+    call display_board
+    jmp PAUSE_LABEL
+
+RANDOM_MAP:
+    call initialize_world_map ; initialize a random board
     call display_board
     jmp PAUSE_LABEL
 
