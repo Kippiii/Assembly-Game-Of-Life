@@ -10,8 +10,8 @@ include Irvine32.inc
 include backend.inc
 
 .data
-MAXIMUM_HEIGHT BYTE 24
-MAXIMUM_WIDTH  BYTE 79
+MAXIMUM_HEIGHT BYTE 255
+MAXIMUM_WIDTH  BYTE 255
 
 carriage_X_pos BYTE 0
 carriage_Y_pos BYTE 0
@@ -128,7 +128,7 @@ initialize_world_map PROC
 ; INPUT: NONE
     call Randomize
     mov ESI, 0
-    mov ECX, 100 
+    mov ECX, board_size
 
 L1:
     mov EDI, world_map
@@ -230,6 +230,8 @@ game_of_life_main PROC
     mov world_map, eax
     invoke HeapAlloc, hHeap, HEAP_ZERO_MEMORY, board_size
     mov prev_map, eax
+
+    call initialize_world_map ; initialize a random board
 
     mov esi, prev_map
     mov ecx, board_size
