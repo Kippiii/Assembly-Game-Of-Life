@@ -190,14 +190,14 @@ CONTINUE_L1:
     loop L1
 
 PRINT_X_CHAR_LABEL:
-    mov EAX, yellow + (white * 16)
+    mov EAX, white + (black * 16)
     call SetTextColor
     mov EDX, OFFSET SPACE_CHAR
     call WriteString
     jmp CONTINUE_L1
 
 PRINT_SPACE_CHAR_LABEL:
-    mov EAX, yellow + (blue * 16)
+    mov EAX, white + (black * 16)
     call SetTextColor
     mov EDX, OFFSET SPACE_CHAR
     call WriteString
@@ -273,7 +273,7 @@ INPUT_LABEL:
 
     call display_board
 
-    mov EAX, 500
+    mov EAX, 50
     call Delay
     call ReadKey ; Get keyboard input
     jz INPUT_LABEL ; If no input was given, repeat INPUT_LABEL
