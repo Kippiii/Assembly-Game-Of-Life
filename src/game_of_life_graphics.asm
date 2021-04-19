@@ -190,7 +190,7 @@ CONTINUE_L1:
     loop L1
 
 PRINT_X_CHAR_LABEL:
-    mov EAX, white + (black * 16)
+    mov EAX, black + (white * 16)
     call SetTextColor
     mov EDX, OFFSET SPACE_CHAR
     call WriteString
@@ -252,7 +252,7 @@ PREV_ARR_MAP:
     call Gotoxy
     ; while user doesnt press "q"
 MAIN_LABEL:
-    mov EAX, white + (black * 16)
+    mov EAX, white + (blue * 16)
     call SetTextColor
     call Clrscr
     
