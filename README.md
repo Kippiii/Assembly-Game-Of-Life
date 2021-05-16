@@ -1,11 +1,2 @@
-John Conway's Game of Life
-
-Controls for game:
-
-W,A,S,D Moves the cursor to a specific cell
-
-Spacebar Flips the value of the cell
-
-Pressing "p" key pauses/resumes evolution
-
-Pressing "f" pauses and advances one frame at a time
+#### Conway's Game of Life in MASM
+This project utilizes MASM and the Irvine libraries in order to create a command-line version of Conway's Game of Life. This was created for the contest in my assembly language class at the Florida Institute of Technology.
